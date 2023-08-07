@@ -6,6 +6,7 @@ import random
 import numpy as np
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
 
 class QNetwork(nn.Module):
     """Actor (Policy) Model."""
@@ -35,7 +36,7 @@ class QNetwork(nn.Module):
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, BUFFER_SIZE, LR, BATCH_SIZE, UPDATE_EVERY, GAMMA, TAU, eps_end, eps_decay, eps_start):
+    def __init__(self, id, state_size, action_size, BUFFER_SIZE, LR, BATCH_SIZE, UPDATE_EVERY, GAMMA, TAU, eps_end, eps_decay, eps_start):
         """Initialize an Agent object.
         
         Params
@@ -44,6 +45,7 @@ class Agent():
             action_size (int): dimension of each action
             seed (int): random seed
         """
+        self.id = id
         self.state_size = state_size
         self.action_size = action_size
         self.BUFFER_SIZE = BUFFER_SIZE
@@ -69,6 +71,7 @@ class Agent():
     
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
+        # for state, action, next_state in zip(states, actions, next_states):
         self.memory.add(state, action, reward, next_state, done)
         
         # Learn every UPDATE_EVERY time steps.
@@ -79,7 +82,7 @@ class Agent():
                 experiences = self.memory.sample()
                 self.learn(experiences, self.GAMMA)
 
-    def act(self, state):
+    def act(self, states):
         """Returns actions for given state as per current policy.
         
         Params
@@ -87,7 +90,9 @@ class Agent():
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
         """
-        
+        # actions = []
+        # for state in states:
+        state = states
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         self.qnetwork_local.eval()
         with torch.no_grad():
@@ -97,9 +102,11 @@ class Agent():
         
         # Epsilon-greedy action selection
         if random.random() > self.eps:
-            return np.argmax(action_values.cpu().data.numpy())
+            agent_action =  np.argmax(action_values.cpu().data.numpy())
         else:
-            return random.choice(np.arange(self.action_size))
+            agent_action =  random.choice(np.arange(self.action_size))
+        # actions.append((agent_action-1)*3+9)
+        return agent_action
 
     def learn(self, experiences, gamma):
         """Update value parameters using given batch of experience tuples.
@@ -118,8 +125,9 @@ class Agent():
         ### Calculate target value from bellman equation
         q_targets = rewards + gamma * q_targets_next * (1 - dones)
         ### Calculate expected value from local network
-        q_expected = self.qnetwork_local(states).gather(1, actions)
-        
+        # q_expected = self.qnetwork_local(states).gather(1, actions)
+        q_expected = self.qnetwork_local(states)
+
         ### Loss calculation (we used Mean squared error)
         loss = F.mse_loss(q_expected, q_targets)
         self.optimizer.zero_grad()
@@ -141,9 +149,19 @@ class Agent():
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+    
     def decay_epsilon(self):
         self.eps = max(self.eps_end, self.eps_decay*self.eps) # decrease epsilon
 
+    def get_weights(self):
+        for target_param in self.qnetwork_target.parameters():
+            pass
+        return  target_param.data
+
+    def change_weights(self,new_weights):
+        for target_param in self.qnetwork_target.parameters():
+            pass
+        target_param.data.copy_(new_weights)
 
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
