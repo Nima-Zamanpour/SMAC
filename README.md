@@ -6,6 +6,7 @@ The project focuses on enhancing the Starcraft Multi-Agent Challenge ([SMAC](htt
 
 ## Motivation
 In previous works, the agents had a fixed sight range of 9. However, we aimed to explore whether we could reduce this range while maintaining comparable results. To achieve this, we developed a new agent called Captain. The Captain receives observations from all agents in each step and decides whether to change the sight range on a scale from 6 to 12. We have implemented three different types of captains:
+![Alt Captain diagram](pics/captain diagram.png)
 
 1. **QMIX Captain:** This captain follows the same configuration as the agents' network.
 2. **IQL Captain:** It employs a decentralized Deep Q-Network (DQN) that receives  observations and provides  sights for each agent from its own network.
